@@ -2,7 +2,13 @@ var https = require('https');
 var request = require('request');
 var SECRET_TOKEN = process.env.DISTART_SECRET_TOKEN;
 
+var TelegramBot = require('node-telegram-bot-api');
+
+var bot = new TelegramBot(SECRET_TOKEN, {polling: false});
+
 var fs = require('fs');
+
+var file = fs.createWriteStream('./output');
 
 module.exports = {
   auth: function () {
@@ -26,8 +32,8 @@ module.exports = {
   },
   onStart: function (token, users, username, params) {
     console.log(token);
-    https.get('https://deepartapi.azurewebsites.net/start/' + token + '/100', function (r) {
-      sendMessage('Thansk! You will receive your image as soon as it is done', users[username].chatID);
+    https.get('https://deepartapi.azurewebsites.net/start/' + token + '/300', function (r) {
+      sendMessage('Thanks! You will receive your image as soon as it is done', users[username].chatID);
       moveUserToQueue (users, username);
     });
   }
@@ -47,7 +53,7 @@ function getPhoto (token, id, user) {
         if (user.content == 1) {
           sendMessage('Thanks! Please send the image on which you want to apply the style', user.chatID);
         } else {
-          sendMessage('Thansk! Write start to start your job or delete to start again', user.chatID);
+          sendMessage('Thanks! Write start to start your job or delete to start again', user.chatID);
         }
         console.log("posted");
       });
@@ -100,10 +106,26 @@ function queueListener (user) {
 
 function retrievePhoto(user) {
   https.get('https://deepartapi.azurewebsites.net/get/' + user.token, function (r) {
-    sendPhoto(user.chatID, r);
+    sendPhoto(user, r);
   });
 }
-function sendPhoto(chatID, photo) {
+function sendPhoto(user, photo) {
     // bot.sendPhoto(chatId, photo, {caption: 'Lovely kittens'});
-    console.log(chatID, photo);
+    // console.log(photo);
+    // streamToString(photo, function(s){
+    //   console.log(s);
+    // })
+    // file.pipe(photo);
+    sendMessage('https://deepartapi.azurewebsites.net/get/' + user.token, user.chatID);
+
+    // photo.setHeader('Content-Type', 'image/jpeg');
+    bot.sendPhoto(user.chatID, photo.toString());
+
+    // request.post('https://api.telegram.org/bot' + SECRET_TOKEN + '/sendPhoto', {form :{
+    //   chat_id: chatID,
+    //   photo: photo
+    // }}, function(e,r) {
+    //   console.log('ah');
+    //   console.log(e,r);
+    // });
 }

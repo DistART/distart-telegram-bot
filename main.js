@@ -33,8 +33,7 @@ app.post('/' + SECRET_TOKEN + '/', jsonParser, function (req, res) {
         users[m.from.username].token = token;
         users[m.from.username].chatID = m.from.id;
         users[m.from.username].content = 0;
-        controller.sendMessage('Authed! Please send your style image', users[m.from.username].chatID);
-
+        controller.sendMessage('Hi! Please send your style image', users[m.from.username].chatID);
       });
     } else if (users[m.from.username].content <= 1) { // authed
       var token = users[m.from.username].token;
@@ -48,10 +47,19 @@ app.post('/' + SECRET_TOKEN + '/', jsonParser, function (req, res) {
     } else {
       // start if the command says to start. ask for start otherwise
       var token = users[m.from.username].token;
-      if (m.text && m.text == 'start')
-        controller.onStart(token, users[m.from.username]);
-      else if (m.text && m.text == 'stop')
-        {}// TODO
+      if (m.text && m.text == 'start') {
+        controller.onStart(token, users, m.from.username);
+      } else if (m.text && m.text == 'delete')
+        {
+          delete users[m.from.username];
+          controller.auth().then(function(token) {
+            users[m.from.username] = {};
+            users[m.from.username].token = token;
+            users[m.from.username].chatID = m.from.id;
+            users[m.from.username].content = 0;
+            controller.sendMessage('Hi! Please send your style image', users[m.from.username].chatID);
+          });
+        }
       else
         controller.sendMessage('Please write start to start your job or delete to start again', users[m.from.username].chatID);
     }

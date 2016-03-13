@@ -4,11 +4,6 @@ var SECRET_TOKEN = process.env.DISTART_SECRET_TOKEN;
 
 var fs = require('fs');
 
-var file = fs.createWriteStream("file.jpg");
-
-
-
-
 module.exports = {
   auth: function () {
     return new Promise( function(resolve) {
@@ -29,10 +24,11 @@ module.exports = {
     var id = photos[photos.length-1].file_id;
     getPhoto(token, id, user);
   },
-  onStart: function (token, user, params) {
+  onStart: function (token, users, username, params) {
     console.log(token);
-    https.get('https://deepartapi.azurewebsites.net/start/' + token, function (r) {
-      sendMessage('Thansk! You will receive your image as soon as it is done', user.chatID);
+    https.get('https://deepartapi.azurewebsites.net/start/' + token + '/100', function (r) {
+      sendMessage('Thansk! You will receive your image as soon as it is done', users[username].chatID);
+      moveUserToQueue (users, username);
     });
   }
 }
@@ -78,4 +74,36 @@ function sendMessage(text, chatID) {
     text : text,
     chat_id : chatID
   }});
+}
+
+function moveUserToQueue (users, username) {
+  var user = users[username];
+  delete users[username];
+  queueListener(user);
+}
+
+function queueListener (user) {
+  //poll the status of the query every second
+  https.get('https://deepartapi.azurewebsites.net/status/' + user.token, function(r) {
+    streamToString(r, function(s) {
+      console.log(s);
+      if (s !== 'SUCCESS') { // iterate
+        setTimeout(function(){
+          queueListener(user);
+        }, 1000);
+      } else {
+        retrievePhoto(user);
+      }
+    });
+  });
+}
+
+function retrievePhoto(user) {
+  https.get('https://deepartapi.azurewebsites.net/get/' + user.token, function (r) {
+    sendPhoto(user.chatID, r);
+  });
+}
+function sendPhoto(chatID, photo) {
+    // bot.sendPhoto(chatId, photo, {caption: 'Lovely kittens'});
+    console.log(chatID, photo);
 }
